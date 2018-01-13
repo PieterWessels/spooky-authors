@@ -18,3 +18,14 @@ training_data <- read.csv(file=training_data_filename, stringsAsFactors=FALSE)
 document <- "This process, however, afforded me no means of ascertaining the dimensions of my dungeon; as I might make its circuit, and return to the point whence I set out, without being aware of the fact; so perfectly uniform seemed the wall."
 
 document <- tolower(document)
+document <- gsub(pattern="[[:punct:]]",
+                 x=document,
+                 replacement="")
+document <- gsub(pattern="[[:digit:]]",
+                 x=document,
+                 replacement="")
+document <- gsub(pattern="[[:space:]]+",
+                 x=document,
+                 replacement=" ")
+
+#Tokenising & (Stemming or Lemitization)
