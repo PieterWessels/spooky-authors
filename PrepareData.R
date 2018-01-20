@@ -1,23 +1,33 @@
 
-
-training_data_filename <- "~/Desktop/hobby dm/SpookyAuthors/data/train.csv"
+library("tm")
+training_data_filename <- "./data/train.csv"
 
 #Load the training data
 training_data <- read.csv(file=training_data_filename, stringsAsFactors=FALSE)
 
-#Clean up data:
+
+#' Tokenises and counts tokens in a document.
+#' 
+#' Assumes English.  Uses Porter Stemming (as implemented in tm)
+#'
+#' @param document string
+#'
+#' @return a dataframe with tokens and counts
+#' @export
+#'
+#' @examples
+CountTokens <- function(document) {
+
+  #Clean up data:
 #  change case
 #  remove punctuation
 #  tokenise
+#  remove stop words
 #  stem
-#  remove stop words  (before or after stemming?)
 #  calculate token frequencies
 
-library("tm")
-# Clean a single "document"
-# example below contains 3 x process
-document <- "process. This process, however, afforded me no means of ascertaining process the dimensions of my dungeon; as I might make its circuit, and return to the point whence I set out, without being aware of the fact; so perfectly uniform seemed the wall."
 
+# Clean a single "document"
 document <- tolower(document)
 document <- gsub(pattern="[[:punct:]]",
                  x=document,
@@ -39,5 +49,22 @@ data <- data[-stopword_index]
 
 #Stem
 #For ease of use, use the Porter stemming algorithm in tm
+data <- stemDocument(x=data, language="english")
+data <- as.data.frame(table(data),
+                      stringsAsFactors = FALSE)
+
+return(data)
+}
 
 
+#Build Term Frequency Matrix.  Each row represents a document
+line1 = training_data$text[1]
+line1_tokens = CountTokens(line1)
+
+line2 <- training_data$text[2]
+line2_tokens <- CountTokens(line2)
+
+#Alernative is to use a long list (i.e. a Tidy solution)
+#ID; token; count
+#Then reform later into matrix.
+#Also - some pontential useful features in the punctuation : !;?;";sentance_length
