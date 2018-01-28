@@ -1,6 +1,9 @@
 
 library("tm")
+library("plyr")
+
 training_data_filename <- "./data/train.csv"
+verbose=TRUE
 
 #Load the training data
 training_data <- read.csv(file=training_data_filename, stringsAsFactors=FALSE)
@@ -115,13 +118,32 @@ if(!is.null(document_id)) {
 return(data)
 }
 
+if(verbose){cat("Counting tokens\n")}
+all_tokens <- apply(X=training_data[,],
+                    MARGIN=1,
+                    FUN=function(x) 
+                          {return(CountTokens(document=x["text"],
+                                              document_id=x["id"],
+                                              count_quotes=TRUE))}
+                    )
+#all_tokens is now a list of dataframes
+if(verbose){cat("Reformatting token counts.\n")}
+all_tokens <- plyr::rbind.fill(all_tokens)
 
-#Build Term Frequency Matrix.  Each row represents a document
-line1_tokens <- CountTokens(document=training_data$text[1],
-                            document_id=training_data$id[1])
+#Create index of document ids (stratified by author) for "test data"
+all_data <- training_data
+stratisfy_by_column_name <- "author"
+sample_id_column_name <- "id"
+sample_size_percent <- 15
 
-
-#Alernative is to use a long list (i.e. a Tidy solution)
-#ID; token; count
-#Then reform later into matrix.
-#Also - some pontential useful features in the punctuation : !;?;";sentance_length
+unique_values <- unique(all_data[,stratisfy_by_column_name])
+all_sample_ids <- sapply(X=unique_values,
+                        FUN=function(x)
+                             {candidate_rows <- all_data[,stratisfy_by_column_name]==x
+                              num_rows <- round(sum(candidate_rows) * sample_size_percent / 100)
+                              sample_ids <- sample(x=all_data[candidate_rows,sample_id_column_name],
+                                                   size=num_rows,
+                                                   replace=FALSE)
+                              return(sample_ids)}
+                        )
+all_sample_ids <- unlist(all_sample_ids, use.names=FALSE)
