@@ -1,13 +1,7 @@
-
 library("tm")
 library("plyr")
 
-training_data_filename <- "./data/train.csv"
-verbose=TRUE
-
-#Load the training data
-training_data <- read.csv(file=training_data_filename, stringsAsFactors=FALSE)
-
+# CountSymbol ----
 #' Count occurances of a symbol (single character) in a document
 #'
 #' @param document 
@@ -28,6 +22,7 @@ CountSymbol <- function(document, symbol){
   return(return_value)
 }
 
+# CountTokens ----
 #' Tokenises and counts tokens in a document.
 #' 
 #' Assumes English.  Uses Porter Stemming (as implemented in tm)
@@ -49,7 +44,6 @@ CountTokens <- function(document,
                         count_hyphens=FALSE,
                         count_questionmarks=TRUE,
                         document_id = NULL) {
-
 #Clean up data:
 #  change case
 #  remove punctuation
@@ -118,8 +112,49 @@ if(!is.null(document_id)) {
 return(data)
 }
 
+# GetSampleIDs ----
+#' Return a (stratified) array of identifiers from a dataframe (useful in identifying a test set)
+#'
+#' @param all_data dataframe with min 2 columns: <stratisfy_by_column_name>,<sample_id_column_name>
+#' @param stratisfy_by_column_name name of column in all_data which will be used to stratisfy the selection
+#' @param sample_id_column_name name of the column in all_data which uniquely identifies each row in all_data
+#' @param sample_size_percent size of the sample (%)
+#'
+#' @return array of id's from <sample_id_column_name>
+#' @export
+#'
+#' @examples
+GetSampleIDs <- function (all_data,
+                          stratisfy_by_column_name="author",
+                          sample_id_column_name="id",
+                          sample_size_percent=15) {
+  #Create index of document ids (stratified by author) for "test data"
+  
+  unique_values <- unique(all_data[,stratisfy_by_column_name])
+  all_sample_ids <- sapply(X=unique_values,
+                           FUN=function(x)
+                           {candidate_rows <- all_data[,stratisfy_by_column_name]==x
+                           num_rows <- round(sum(candidate_rows) * sample_size_percent / 100)
+                           sample_ids <- sample(x=all_data[candidate_rows,sample_id_column_name],
+                                                size=num_rows,
+                                                replace=FALSE)
+                           return(sample_ids)}
+  )
+  all_sample_ids <- unlist(all_sample_ids, use.names=FALSE)
+  
+  return(all_sample_ids)
+}
+# MAIN ----
+
+corpus_filename <- "./data/train.csv"
+train_test_filename <- "./data/training_data.Rdata"
+verbose=TRUE
+
+#Load the training data
+corpus <- read.csv(file=corpus_filename, stringsAsFactors=FALSE)
+
 if(verbose){cat("Counting tokens\n")}
-all_tokens <- apply(X=training_data[,],
+all_tokens <- apply(X=corpus[,],
                     MARGIN=1,
                     FUN=function(x) 
                           {return(CountTokens(document=x["text"],
@@ -130,20 +165,24 @@ all_tokens <- apply(X=training_data[,],
 if(verbose){cat("Reformatting token counts.\n")}
 all_tokens <- plyr::rbind.fill(all_tokens)
 
-#Create index of document ids (stratified by author) for "test data"
-all_data <- training_data
-stratisfy_by_column_name <- "author"
-sample_id_column_name <- "id"
-sample_size_percent <- 15
+#Get of each author for testing purposes
+test_sample_ids = GetSampleIDs(all_data = corpus,
+                               stratisfy_by_column_name = "author",
+                               sample_id_column_name = "id",
+                               sample_size_percent = 10)
+#Update corpus to indictae which documents are training, which are test
+index_of_samples = corpus$id %in% test_sample_ids
+corpus$type="TRAIN"
+corpus$type[index_of_samples]="TEST"
+rm(list=c("index_of_samples","test_sample_ids"))
 
-unique_values <- unique(all_data[,stratisfy_by_column_name])
-all_sample_ids <- sapply(X=unique_values,
-                        FUN=function(x)
-                             {candidate_rows <- all_data[,stratisfy_by_column_name]==x
-                              num_rows <- round(sum(candidate_rows) * sample_size_percent / 100)
-                              sample_ids <- sample(x=all_data[candidate_rows,sample_id_column_name],
-                                                   size=num_rows,
-                                                   replace=FALSE)
-                              return(sample_ids)}
-                        )
-all_sample_ids <- unlist(all_sample_ids, use.names=FALSE)
+#Split the token data into 2 different sets:
+all_tokens2 <- merge(x=all_tokens,
+               y=corpus[,c("id","type")],
+               by.x="document_id",
+               by.y="id")
+
+
+
+
+
