@@ -1,0 +1,3 @@
+source("PrepareData.R")
+
+LoadWorkingEnvironment()
