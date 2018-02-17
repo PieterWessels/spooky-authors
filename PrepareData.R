@@ -214,3 +214,21 @@ LoadWorkingEnvironment <- function(corpus_filename="./data/train.csv",
   load(file=train_test_filename,
        envir = .GlobalEnv)
 }
+
+
+# Naive Bayesian Multinomial Classifier:
+# Symbols:
+# [PI]_{1..n}a = a_1 x a_2 x ... x a_n
+# [E]_{1..n}a = a_1 + a_2 + ... a_n
+# See https://nlp.stanford.edu/IR-book/html/htmledition/naive-bayes-text-classification-1.html
+#
+# TrainMultinomialNaiveBayse(Classes, Documents)
+# Vocab <- ExtractVocab(Documents)
+# N <- CoundDocuments(Documents)
+# For Each class in Classes
+#   N_class <- CountDocumentsInClass(Documents, class)
+#   prior[class] <- N_class / N
+#   text_class <- ConcatenateTextOfAllDocumentsInClass(Documents, class)
+#   For Each term in Vocab
+#      count_termclass <- CountTokensOfTerm(text_class, term)
+#
